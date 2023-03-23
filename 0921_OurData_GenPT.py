@@ -25,26 +25,31 @@ chunk_overlap = 0.5
 
 parser = argparse.ArgumentParser(description='manual to this script')
 # 切分用倍频程
-# parser.add_argument('--csv_file', type=str,
-#                     default="/data/xbj/0921_OUR_DATA_FOR_TEST/Process/0919_Aug_Wav_voice.csv")
 parser.add_argument('--csv_file', type=str,
-                     default="/mnt/sda/xbj/1000Hz.csv")  # 这里我随便给了一个csv文件(pyq)
-# parser.add_argument('--dir_str', type=str,
-#                     default="/data/xbj/0921_OUR_DATA_FOR_TEST/Process/xiaohe")
-parser.add_argument('--dir_str', type=str,
-                    default="/data2/pyq/0322_OUR_DATA_FOR_TEST/Process/xiaohe")
-# parser.add_argument('--save_dir', type=str,
-#                     default="/data/xbj/0921_OUR_DATA_FOR_TEST/Test_pt/xiaohe")
+                    default="/data2/pyq/yousonic/code_split_wav/gt_zky_t60.csv")  # 中科院数据的t60文件
+parser.add_argument('--dir_str_head', type=str,
+                    default="/data2/pyq/yousonic/20230214_zky/")
 parser.add_argument('--save_dir', type=str,
-                    default="/data2/pyq/0322_OUR_DATA_FOR_TEST/Test_pt/xiaohe")
+                    default="/data2/pyq/0323_ZKY_DATA_FOR_TEST/Test_zky_pt")
 
 args = parser.parse_args()
 save_dir = args.save_dir
 if not os.path.exists(args.save_dir):
     os.makedirs(save_dir)
 save_dir = args.save_dir
-dir_str = args.dir_str
+dir_str_head = args.dir_str_head
 csv_file = args.csv_file
+dir_str_ = [dir_str_head + "N106",
+            dir_str_head + "N208",
+            dir_str_head + "N306",
+            dir_str_head + "N308",
+            dir_str_head + "S102",
+            dir_str_head + "S106",
+            dir_str_head + "S201",
+            dir_str_head + "S204",
+            dir_str_head + "S206",
+            dir_str_head + "S301",
+            ]
 
 
 ##functions
@@ -54,13 +59,6 @@ def SPLCal(x):
     p0 = 2e-5
     spl = 20 * np.log10(pa / p0)
     return spl
-
-
-#print(dir_str)
-
-
-##main loop, process eahc file in dir
-# g = wave.open("clean_speech_example","rb")
 
 
 class Totensor(object):
@@ -85,179 +83,111 @@ class Totensor(object):
 
 csv_data = pd.read_csv(csv_file)
 # print(csv_data)
-
+num = 0
 # csv_data = pd.read_csv()
+for i in range(len(dir_str_)):
+    temp1 = os.listdir(dir_str_[i])
+    for j in range(len(temp1)):
+        dir_str = []
+        dir_str.append((dir_str_[i] + '/' + temp1[j]))
+        print(dir_str)
 
+        # for wav_file_name in glob.glob(dir_str+r"/*.wav"):
+        for file_name in glob.glob(dir_str[0] + r"/*.wav"):
+            # wav_file_name = glob.glob(dir_str + r"/*.wav")[0]
+            f = wave.open(file_name, "rb")
+            params = f.getparams()
+            nchannels, sampwidth, framerate, nframes = params[:4]
+            # print(file_name)
+            # print(nchannels, sampwidth, framerate, nframes / framerate)
 
-# for wav_file_name in glob.glob(dir_str+r"/*.wav"):
-for file_name in glob.glob(dir_str + r"/*.wav"):
-    # wav_file_name = glob.glob(dir_str + r"/*.wav")[0]
-    f = wave.open(file_name, "rb")
-    params = f.getparams()
-    nchannels, sampwidth, framerate, nframes = params[:4]
-    #print(file_name)
-    #print(nchannels, sampwidth, framerate, nframes / framerate)
+            str_data = f.readframes(nframes)
+            f.close()
+            wave_data = np.frombuffer(str_data, dtype=np.int16)
 
+            wave_data.shape = -1, nchannels
+            wave_data = wave_data.T
+            audio_time = nframes / framerate
+            chan_num = 0
+            count = 0
+            new_file_name = (file_name.split("\\")[-1]).split(".")[0]
+            new_file_name = new_file_name.split("/")[-3] + '-' + new_file_name.split("/")[-2]
+            ## process each channel of audio
+            for audio_samples_np in wave_data:
+                whole_audio_SPL = SPLCal(audio_samples_np)
 
-    str_data = f.readframes(nframes)
-    f.close()
-    wave_data = np.frombuffer(str_data, dtype=np.int16)
+                available_part_num = (audio_time - chunk_overlap) // (
+                        chunk_length - chunk_overlap)  # 4*x - (x-1)*0.5 <= audio_time    x为available_part_num
 
+                if available_part_num == 1:
+                    cut_parameters = [chunk_length]
+                else:
+                    cut_parameters = np.arange(chunk_length,
+                                               (chunk_length - chunk_overlap) * available_part_num + chunk_overlap,
+                                               chunk_length)  # np.arange()函数第一个参数为起点，第二个参数为终点，第三个参数为步长（10秒）
 
-    wave_data.shape = -1, nchannels
-    wave_data = wave_data.T
-    audio_time = nframes / framerate
-    chan_num = 0
-    count = 0
-    new_file_name = (file_name.split("\\")[-1]).split(".")[0]
-    new_file_name = new_file_name.split("/")[-1]
-    ## process each channel of audio
-    for audio_samples_np in wave_data:
-        whole_audio_SPL = SPLCal(audio_samples_np)
+                start_time = int(0)  # 开始时间设为0
+                count = 0
+                # 开始存储pt文件
+                dict = {}
+                save_data = []
+                for t in cut_parameters:
+                    stop_time = int(t)  # pydub以毫秒为单位工作
+                    start = int(start_time * framerate)
+                    end = int((start_time + chunk_length) * framerate)
+                    audio_chunk = audio_samples_np[start:end]  # 音频切割按开始时间到结束时间切割
 
-        available_part_num = (audio_time - chunk_overlap) // (
-                chunk_length - chunk_overlap)  # 4*x - (x-1)*0.5 <= audio_time    x为available_part_num
+                    ##ingore chunks with no audio
+                    chunk_spl = SPLCal(audio_chunk)
+                    if whole_audio_SPL - chunk_spl >= 20:
+                        continue
 
-        if available_part_num == 1:
-            cut_parameters = [chunk_length]
-        else:
-            cut_parameters = np.arange(chunk_length,
-                                       (chunk_length - chunk_overlap) * available_part_num + chunk_overlap,
-                                       chunk_length)  # np.arange()函数第一个参数为起点，第二个参数为终点，第三个参数为步长（10秒）
+                    # file naming
 
-        start_time = int(0)  # 开始时间设为0
-        count = 0
-        # 开始存储pt文件
-        dict = {}
-        dict_125 = {}
-        dict_250 = {}
-        dict_500 = {}
-        dict_1000 = {}
-        dict_2000 = {}
-        dict_4000 = {}
-        save_data = []
-        for t in cut_parameters:
-            stop_time = int(t)  # pydub以毫秒为单位工作
-            start = int(start_time * framerate)
-            end = int((start_time + chunk_length) * framerate)
-            audio_chunk = audio_samples_np[start:end]  # 音频切割按开始时间到结束时间切割
+                    count += 1
 
-            ##ingore chunks with no audio
-            chunk_spl = SPLCal(audio_chunk)
-            if whole_audio_SPL - chunk_spl >= 20:
-                continue
+                    # A weighting
+                    chunk_a_weighting = splweighting.weight_signal(audio_chunk, framerate)
 
-            ##file naming
+                    # gammatone
+                    chunk_result, _, _ = Filter_Downsample_Spec(chunk_a_weighting, framerate)
 
-            count += 1
+                    chan = chan_num + 1
+                    room = new_file_name
 
-            ##A weighting
-            chunk_a_weighting = splweighting.weight_signal(audio_chunk, framerate)
+                    a = (csv_data['Room:'] == room)
+                    # b = (csv_data['Room Config:'] == config).values
 
-            ##gammatone
-            chunk_result, _, _ = Filter_Downsample_Spec(chunk_a_weighting, framerate)
+                    data = csv_data[a]
+                    #  Freq: (Freq, T60, Mean T60, DRR, Mean DRR)
+                    # 500Hz: (13, 13, 14, 13, 14)
+                    # 1kHz:  (16, 16, 17, 16, 17)
+                    # 2kHz:  (19, 19, 20, 19, 20)
+                    # 4kHz:  (22, 22, 23, 22, 23)
+                    T60_data = data.loc[:, ['T60:.13']]    # 13表示的是采样频率是500Hz对应的T60
+                    FB_T60_data = data.loc[:, ['FB T60:']]
+                    T60_M_data = data.loc[:, ['Mean T60:.14']]
+                    DDR_each_band = np.array([0 for i in range(30)])
+                    T60_each_band = (T60_data.values).reshape(-1)
+                    MeanT60_each_band = np.array([FB_T60_data, T60_M_data])
+                    image = chunk_result
+                    # print('-- save image shape:', [x.shape for x in image], ' --')
+                    sample = {'image': image, 'ddr': DDR_each_band, 't60': T60_each_band, "MeanT60": MeanT60_each_band}
+                    transform = Totensor()
+                    sample = transform(sample)
 
-            chan = chan_num + 1
-            room = new_file_name  # +"_" + new_file_name.split("_")[1]
+                    save_data.append(sample)
 
-            #print(new_file_name)
+                    # 这里加上干净的pt
 
-            a = (csv_data['Room:'] == room).values
-            # b = (csv_data['Room Config:'] == config).values
+                    start_time = start_time + chunk_length - chunk_overlap  # 开始时间变为结束时间前1s---------也就是叠加上一段音频末尾的4s
+                for slice_number in range(61):
+                    save_data
 
-            data = csv_data[a]
-            T60_data = data.loc[:, ['T60:']]
-            FB_T60_data = data.loc[:, ['FB T60:']]
-            FB_T60_M_data = data.loc[:, ['FB T60 Mean (Ch):']]
-            DDR_each_band = np.array([0 for i in range(30)])
-            T60_each_band = (T60_data.values).reshape(-1)
-            MeanT60_each_band = np.array([FB_T60_data, FB_T60_M_data])
-            image = chunk_result
-            #print('-- save image shape:', [x.shape for x in image], ' --')
-            sample = {'image': image, 'ddr': DDR_each_band, 't60': T60_each_band, "MeanT60": MeanT60_each_band}
-            transform = Totensor()
-            sample = transform(sample)
+                if len(save_data) != 0:
+                    pt_file_name = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '.pt')
+                    dict[new_file_name + '-' + str(chan_num)] = save_data
+                    torch.save(dict, pt_file_name)
 
-            save_data.append(sample)
-
-            # 这里加上干净的pt
-
-            start_time = start_time + chunk_length - chunk_overlap  # 开始时间变为结束时间前1s---------也就是叠加上一段音频末尾的4s
-
-        if len(save_data) != 0:
-            pt_file_name = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '.pt')
-            pt_file_name_125 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '125hz.pt')
-            pt_file_name_250 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '250hz.pt')
-            pt_file_name_500 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '500hz.pt')
-            pt_file_name_1000 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '1000hz.pt')
-            pt_file_name_2000 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '2000hz.pt')
-            pt_file_name_4000 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '4000hz.pt')
-
-            dict[new_file_name + '-' + str(chan_num)] = save_data
-            # for slice_number in range(61):
-            #     dict[new_file_name + str(chan_num)][slice_number]['t60'] = torch.zeros(30)
-            # dict125 = []
-            # dict250 = []
-            # dict500 = []
-            # dict1000 = []
-            # dict2000 = []
-            # dict4000 = []
-
-            # for slice_num in range(4):
-            #     # 125Hz
-            #     dict125.append({"image": save_data[slice_num]['image'][0],
-            #                          "ddr": save_data[0]['ddr'],
-            #                          "t60": torch.zeros(30),
-            #                          "MeanT60": torch.zeros(2, 30, 1),
-            #                          "clean": save_data[slice_num]['image'][0]})
-            #     # 250Hz
-            #     dict250.append({"image": save_data[slice_num]['image'][1],
-            #                     "ddr": save_data[0]['ddr'],
-            #                     "t60": torch.zeros(30),
-            #                     "MeanT60": torch.zeros(2, 30, 1),
-            #                     "clean": save_data[slice_num]['image'][1]})
-            #
-            #     # 500Hz
-            #     dict500.append({"image": save_data[slice_num]['image'][2],
-            #                          "ddr": save_data[2]['ddr'],
-            #                          "t60": torch.zeros(30),
-            #                          "MeanT60": torch.zeros(2, 30, 1),
-            #                          "clean": save_data[slice_num]['image'][2]})
-            #     # 1000Hz
-            #     dict1000.append({"image": save_data[slice_num]['image'][3],
-            #                          "ddr": save_data[2]['ddr'],
-            #                          "t60": torch.zeros(30),
-            #                          "MeanT60": torch.zeros(2, 30, 1),
-            #                          "clean": save_data[slice_num]['image'][3]})
-            #     # 2000Hz
-            #     dict1000.append({"image": save_data[slice_num]['image'][4],
-            #                          "ddr": save_data[2]['ddr'],
-            #                          "t60": torch.zeros(30),
-            #                          "MeanT60": torch.zeros(2, 30, 1),
-            #                          "clean": save_data[slice_num]['image'][4]})
-            #     # 4000Hz
-            #     dict1000.append({"image": save_data[slice_num]['image'][5],
-            #                          "ddr": save_data[2]['ddr'],
-            #                          "t60": torch.zeros(30),
-            #                          "MeanT60": torch.zeros(2, 30, 1),
-            #                          "clean": save_data[slice_num]['image'][5]})
-            #
-            # dict_125[new_file_name + '-' + str(chan_num) + '-' + '125Hz'] = dict125
-            # dict_250[new_file_name + '-' + str(chan_num) + '-' + '250Hz'] = dict250
-            # dict_500[new_file_name + '-' + str(chan_num) + '-' + '500Hz'] = dict500
-            # dict_1000[new_file_name + '-' + str(chan_num) + '-' + '1000Hz'] = dict1000
-            # dict_2000[new_file_name + '-' + str(chan_num) + '-' + '2000Hz'] = dict2000
-            # dict_4000[new_file_name + '-' + str(chan_num) + '-' + '4000Hz'] = dict4000
-
-
-            torch.save(dict, pt_file_name)
-            # torch.save(dict_125, pt_file_name_125)
-            # torch.save(dict_250, pt_file_name_250)
-            # torch.save(dict_500, pt_file_name_500)
-            # torch.save(dict_1000, pt_file_name_1000)
-            # torch.save(dict_2000, pt_file_name_2000)
-            # torch.save(dict_4000, pt_file_name_4000)
-
-        chan_num = chan_num + 1
-    print('----------------finish----------------')
-
+                chan_num = chan_num + 1
+            print('----------------finish----------------')
