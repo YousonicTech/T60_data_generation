@@ -89,12 +89,12 @@ def Filter_Downsample_Spec(waveform, fs):
     filtered_signal = np.zeros((bands.size, nframes))
     for band in range(bands.size):
         # 信号，频率下限，频率上限， 采样率
-        print("low:", low[band], "high:", high[band])
+        print("low:",low[band],"high:",high[band])
         filtered_signal[band] = bandpass(raw_signal[:, nch], low[band], high[band], fs, order=bands.size)
         filtered_signal[band] = highpass(filtered_signal[band],low[band],fs,order=6)
-       # plt.figure()
-       # plt.plot(filtered_signal[band])
-       # plt.clf()
+        plt.figure()
+        plt.plot(filtered_signal[band])
+        plt.clf()
 
     downsample_signal = []
     for i in range(len(bands)):
@@ -102,9 +102,9 @@ def Filter_Downsample_Spec(waveform, fs):
         temp_data = filtered_signal[i]
         number_of_samples = round(len(temp_data) * float(temp_rate) / fs)
         downsample_signal.append(scipy.signal.resample(temp_data, number_of_samples))
-        #plt.figure()
-        #plt.plot(downsample_signal[i])
-        #plt.clf()
+        plt.figure()
+        plt.plot(downsample_signal[i])
+        plt.clf()
 
     spectrograms = []
     nfft = 256
@@ -131,7 +131,7 @@ def All_Frequency_Spec(waveform, fs):
     nfft = 512
 
     spec, freq, t, _ = plt.specgram(raw_signal, NFFT=nfft, Fs=fs, window=np.hanning(M=nfft), scale_by_freq=True)
-    #print(spec.shape)
+    print(spec.shape)
     plt.clf()
     spec = 10 * np.log10(spec)
 

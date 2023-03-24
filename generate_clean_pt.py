@@ -16,18 +16,12 @@ import torch
 import pandas as pd
 import argparse
 from gen_specgram import Filter_Downsample_Spec
-# 加载gc模块
-import gc
-
-# 垃圾回收
-# gc.collect() 返回处理这些循环引用一共释放掉的对象个数
 
 ##configuration area
 chunk_length = 4
 chunk_overlap = 0.5
 # TODO 需要改变csv,numpydir/csv_save_path这些路径
 
-#nohup python 0921_OurData_GenPT.py --dir_str /data2/hsl/0323_wav_data/add_without_zky_0316/Speech/central-hall-university-york/ --save_dir /data2/hsl/0323_pt_data/add_without_zky_0316/train/central-hall-university-york/ --csv_file /data2/hsl/0323_wav_data/add_without_zky_0316/Speech/central-hall-university-york/20230321T124743_test_gen_corpus_dataset_results.csv >> /data2/hsl/0324_central-hall-university-york.log 2>&1 &
 
 parser = argparse.ArgumentParser(description='manual to this script')
 # 切分用倍频程
@@ -37,11 +31,11 @@ parser.add_argument('--csv_file', type=str,
                      default="/data2/hsl/0323_wav_data/add_with_zky_0316/Speech/Cas-zhongguancun/20230321T150605_test_gen_corpus_dataset_results.csv")
 #                     default="/data/xbj/0921_OUR_DATA_FOR_TEST/Process/xiaohe")
 parser.add_argument('--dir_str', type=str,
-                    default="/data2/hsl/0323_wav_data/add_with_zky_0316/Speech/Cas-zhongguancun/")
+                    default="/data/xbj/concatPeople/16000Hz/")
 # parser.add_argument('--save_dir', type=str,
 #                     default="/data/xbj/0921_OUR_DATA_FOR_TEST/Test_pt/xiaohe")
 parser.add_argument('--save_dir', type=str,
-                    default="/data2/hsl/0323_pt_data/add_with_zky_0316/Cas-zhongguancun/")
+                    default="/data2/hsl/0324_clean_pt/")
 
 args = parser.parse_args()
 save_dir = args.save_dir
@@ -203,7 +197,7 @@ for file_name in glob.glob(dir_str + r"/*.wav"):
             start_time = start_time + chunk_length - chunk_overlap  # 开始时间变为结束时间前1s---------也就是叠加上一段音频末尾的4s
 
         if len(save_data) != 0:
-            pt_file_name = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '.pt')
+            pt_file_name = os.path.join(save_dir, new_file_name + '.pt')
             pt_file_name_125 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '125hz.pt')
             pt_file_name_250 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '250hz.pt')
             pt_file_name_500 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '500hz.pt')
@@ -211,7 +205,7 @@ for file_name in glob.glob(dir_str + r"/*.wav"):
             pt_file_name_2000 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '2000hz.pt')
             pt_file_name_4000 = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '-' + '4000hz.pt')
 
-            dict[new_file_name + '-' + str(chan_num)] = save_data
+            dict[new_file_name] = save_data
             # for slice_number in range(61):
             #     dict[new_file_name + str(chan_num)][slice_number]['t60'] = torch.zeros(30)
             # dict125 = []
@@ -277,7 +271,5 @@ for file_name in glob.glob(dir_str + r"/*.wav"):
             # torch.save(dict_4000, pt_file_name_4000)
 
         chan_num = chan_num + 1
-
-    gc.collect()#内存回收（不知道有没有用）
     print('----------------finish----------------')
 
