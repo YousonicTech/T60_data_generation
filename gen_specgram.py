@@ -10,7 +10,7 @@ from acoustics.bands import (_check_band_type, octave_low, octave_high, third_lo
 import cv2
 import matplotlib
 matplotlib.use('agg')
-
+import gc
 def paint_single(spec, fs, time):
     plt.figure(figsize=(20, 10), dpi=150)
     plt.imshow(spec, origin = 'lower')
@@ -94,9 +94,9 @@ def Filter_Downsample_Spec(waveform, fs):
         print("low:",low[band],"high:",high[band])
         filtered_signal[band] = bandpass(raw_signal[:, nch], low[band], high[band], fs, order=bands.size)
         filtered_signal[band] = highpass(filtered_signal[band],low[band],fs,order=6)
-        plt.figure()
-        plt.plot(filtered_signal[band])
-        plt.clf()
+        #plt.figure()
+        #plt.plot(filtered_signal[band])
+        #plt.clf()
 
     downsample_signal = []
     for i in range(len(bands)):
@@ -104,9 +104,9 @@ def Filter_Downsample_Spec(waveform, fs):
         temp_data = filtered_signal[i]
         number_of_samples = round(len(temp_data) * float(temp_rate) / fs)
         downsample_signal.append(scipy.signal.resample(temp_data, number_of_samples))
-        plt.figure()
-        plt.plot(downsample_signal[i])
-        plt.clf()
+        #plt.figure()
+        #plt.plot(downsample_signal[i])
+        #plt.clf()
 
     spectrograms = []
     nfft = 256
@@ -123,7 +123,8 @@ def Filter_Downsample_Spec(waveform, fs):
         spectrograms.append(spec)
         fs_each_band.append(freq)
         time.append(t)
-
+    #del spec,freq,t
+    #gc
     return spectrograms, fs_each_band, time
 
 
