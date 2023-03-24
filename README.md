@@ -13,3 +13,7 @@
   The type of *.pt is dict, and its size is 1. Its Key is its filename, and its value is a list. The size of the list is the number of slices, depended on the length of your *.wav. Each list is a dict, with the size of 4, including image, ddr, t60, MeanT60 and their corresponding values.
 ### Instructions
   If you want use the code to generate *.pt, you have better to run 0921_OurData_GenPT.pywhth gen_specgram.py, as well as your *.wav files. You may revise some variables in 0921_OurData_GenPT.py, just modifying according to the code conmments.
+### Steps  
+  Firstly, you should check gen_specgram.py and splweighting.py is in your workplace.  
+  Secondly, revise the default mentioned in ### Code Description.  
+  Thirdly, run 0921_OurData_GenPT.py
