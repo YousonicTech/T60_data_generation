@@ -118,6 +118,9 @@ for file_name in glob.glob(dir_str + r"/*.wav"):
     new_file_name = new_file_name.split("/")[-1]
     ## process each channel of audio
     for audio_samples_np in wave_data:
+        pt_file_name = os.path.join(save_dir, new_file_name + '-' + str(chan_num) + '.pt')
+        if os.path.exists(pt_file_name):
+            continue
         whole_audio_SPL = SPLCal(audio_samples_np)
 
         available_part_num = (audio_time - chunk_overlap) // (

@@ -60,7 +60,7 @@ save_dir = [#save_dir_head + "arthur-sykes-rymer-auditorium-university-york",
             save_dir_head + "york-guildhall-council-chamber",
             ]
 
-csv_dir = [#csv_path_head + "arthur-sykes-rymer-auditorium-university-york",
+csv_dir = [ #csv_path_head + "arthur-sykes-rymer-auditorium-university-york",
             #csv_path_head + "creswell-crags",
             #csv_path_head + "elveden-hall-suffolk-england",
             csv_path_head + "central-hall-university-york"+"/20230321T124743_test_gen_corpus_dataset_results.csv",

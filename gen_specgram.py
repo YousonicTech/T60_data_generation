@@ -8,6 +8,8 @@ from acoustics.signal import bandpass,highpass
 import matplotlib.pyplot as plt
 from acoustics.bands import (_check_band_type, octave_low, octave_high, third_low, third_high)
 import cv2
+import matplotlib
+matplotlib.use('agg')
 
 def paint_single(spec, fs, time):
     plt.figure(figsize=(20, 10), dpi=150)
