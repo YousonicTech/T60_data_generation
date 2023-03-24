@@ -160,19 +160,38 @@ for i in range(len(dir_str_)):
 
                     data = csv_data[a]
                     #  Freq: (Freq, T60, Mean T60, DRR, Mean DRR)
+                    # 125Hz: ( 7,  7,  8,  7,  8)
+                    # 250Hz: (10, 10, 11, 10, 11)
                     # 500Hz: (13, 13, 14, 13, 14)
                     # 1kHz:  (16, 16, 17, 16, 17)
                     # 2kHz:  (19, 19, 20, 19, 20)
                     # 4kHz:  (22, 22, 23, 22, 23)
-                    T60_data = data.loc[:, ['T60:.13']]    # 13表示的是采样频率是500Hz对应的T60
-                    FB_T60_data = data.loc[:, ['FB T60:']]
-                    T60_M_data = data.loc[:, ['Mean T60:.14']]
-                    DDR_each_band = np.array([0 for i in range(30)])
-                    T60_each_band = (T60_data.values).reshape(-1)
+                    # 将每个频段的t60_gt存进去
+                    T60_data = np.array(data.loc[:, ['T60:.7']]).tolist()  # 125Hz
+                    T60_data.append(np.array(data.loc[:, ['T60:.10']]))    # 250Hz
+                    T60_data.append(np.array(data.loc[:, ['T60:.13']]))    # 500Hz
+                    T60_data.append(np.array(data.loc[:, ['T60:.16']]))    # 1kHZ
+                    T60_data.append(np.array(data.loc[:, ['T60:.19']]))    # 2kHz
+                    T60_data.append(np.array(data.loc[:, ['T60:.22']]))    # 4kHz
+                    T60_each_band = np.array(T60_data).reshape(-1)
+
+                    FB_T60_data = np.array(data.loc[:, ['FB T60:']])
+
+                    #将每个频段的Mean_t60存进去
+                    T60_M_data = np.array(data.loc[:, ['Mean T60:.8']]).tolist()  # 125Hz
+                    T60_M_data.append(np.array(data.loc[:, ['Mean T60:.11']]))    # 250Hz
+                    T60_M_data.append(np.array(data.loc[:, ['Mean T60:.14']]))    # 500Hz
+                    T60_M_data.append(np.array(data.loc[:, ['Mean T60:.17']]))    # 1kHz
+                    T60_M_data.append(np.array(data.loc[:, ['Mean T60:.20']]))    # 2kHz
+                    T60_M_data.append(np.array(data.loc[:, ['Mean T60:.23']]))    # 4kHz
+                    T60_M_data = np.array(T60_data).reshape(-1)
                     MeanT60_each_band = np.array([FB_T60_data, T60_M_data])
+
+                    DDR_each_band = np.array([0 for i in range(30)])
+
                     image = chunk_result
                     # print('-- save image shape:', [x.shape for x in image], ' --')
-                    sample = {'image': image, 'ddr': DDR_each_band, 't60': T60_each_band, "MeanT60": MeanT60_each_band}
+                    sample = {'image': image, 'ddr': DDR_each_band, 't60': T60_each_band, "MeanT60": T60_M_data}
                     transform = Totensor()
                     sample = transform(sample)
 
