@@ -15,5 +15,5 @@
   If you want use the code to generate *.pt, you have better to run 0921_OurData_GenPT.pywhth gen_specgram.py, as well as your *.wav files. You may revise some variables in 0921_OurData_GenPT.py, just modifying according to the code conmments.
 ### Steps  
   Firstly, you should check gen_specgram.py and splweighting.py is in your workplace.  
-  Secondly, revise the default mentioned in ### Code Description.  
+  Secondly, revise the default mentioned in Code Description.  
   Thirdly, run 0921_OurData_GenPT.py
