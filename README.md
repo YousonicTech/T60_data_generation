@@ -14,6 +14,7 @@ parser.add_argument('--save_dir', type=str,
 # 2.生成干净语谱图
 在generate_clean_pt.py中
 与1中步骤一致，只不过注意将语音路径改为干净语音的路径，csv文件随便传一个就可以，然后python generate_clean_pt.py即可生成干净语谱图对应的pt文件
+
 这一步我已经生成好了，可以直接跳过，生成的pt文件夹路径为/data2/hsl/0324_clean_pt/
 
 # 3.将2生成的干净语谱图pt文件加入步骤1中生成的pt文件中
