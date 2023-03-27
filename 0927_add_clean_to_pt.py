@@ -13,9 +13,9 @@ import torch
 import numpy
 
 clean_speech_path = "/data2/hsl/0324_clean_pt/*.pt"
-original_pt_path = "/data2/hsl/0323_pt_data/add_with_zky_0316/train/Cas-YanXiHu/"  # 这里面又有train又有val，还得弄一下
+original_pt_path = "/data2/hsl/0323_pt_data/add_with_zky_0316/train/Cas-YanXiHu/"  
 new_pt_path = "/data2/hsl/0324_pt_with_clean/Cas-YanXiHu/"
-# 对应1kHz的语谱图
+# 对应500Hz的语谱图
 which_freq = 2
 
 
