@@ -24,3 +24,4 @@ parser.add_argument('--save_dir', type=str,
 
 # 4.附加项，多线程生成
 提供了thread1.py和thread2.py,这俩功能一样，只不过路径而已，可以根据需求更改里面的路径，多线程同时生成数据。
+生成clean_pt的多线程生成数据代码：gen_pt_with_clean_via_thread.py
